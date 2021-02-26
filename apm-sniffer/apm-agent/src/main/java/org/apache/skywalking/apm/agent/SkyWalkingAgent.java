@@ -18,11 +18,6 @@
 
 package org.apache.skywalking.apm.agent;
 
-import java.lang.instrument.Instrumentation;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.agent.builder.AgentBuilder;
 import net.bytebuddy.description.NamedElement;
@@ -48,6 +43,11 @@ import org.apache.skywalking.apm.agent.core.plugin.bootstrap.BootstrapInstrument
 import org.apache.skywalking.apm.agent.core.plugin.bytebuddy.CacheableTransformerDecorator;
 import org.apache.skywalking.apm.agent.core.plugin.jdk9module.JDK9ModuleExporter;
 
+import java.lang.instrument.Instrumentation;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
 import static net.bytebuddy.matcher.ElementMatchers.nameContains;
 import static net.bytebuddy.matcher.ElementMatchers.nameStartsWith;
 import static net.bytebuddy.matcher.ElementMatchers.not;
@@ -64,6 +64,7 @@ public class SkyWalkingAgent {
     public static void premain(String agentArgs, Instrumentation instrumentation) throws PluginException {
         final PluginFinder pluginFinder;
         try {
+            // 初始化 Agent 配置
             SnifferConfigInitializer.initializeCoreConfig(agentArgs);
         } catch (Exception e) {
             // try to resolve a new logger, and use the new logger to write the error log here
@@ -76,6 +77,8 @@ public class SkyWalkingAgent {
         }
 
         try {
+            // 使用 new PluginBootstrap().loadPlugins() 读取所有插件描述文件
+            // 使用 PluginFinder 对插件进行分类，分类的目的是使 find() 方法可以查找到某个类匹配的所有插件
             pluginFinder = new PluginFinder(new PluginBootstrap().loadPlugins());
         } catch (AgentPackageNotFoundException ape) {
             LOGGER.error(ape, "Locate agent.jar failure. Shutting down.");
@@ -85,8 +88,11 @@ public class SkyWalkingAgent {
             return;
         }
 
+        // 创建 ByteBuddy 对象，并且可配置是否开启 debug模式 (agent.is_open_debugging_class=true)
+        // debug模式可以将 JavaAgent 增强的类放到 /debugger 目录下
         final ByteBuddy byteBuddy = new ByteBuddy().with(TypeValidation.of(Config.Agent.IS_OPEN_DEBUGGING_CLASS));
 
+        // 指定不需要增强的类
         AgentBuilder agentBuilder = new AgentBuilder.Default(byteBuddy).ignore(
                 nameStartsWith("net.bytebuddy.")
                         .or(nameStartsWith("org.slf4j."))
@@ -100,6 +106,7 @@ public class SkyWalkingAgent {
 
         JDK9ModuleExporter.EdgeClasses edgeClasses = new JDK9ModuleExporter.EdgeClasses();
         try {
+            // 对类进行增强
             agentBuilder = BootstrapInstrumentBoost.inject(pluginFinder, instrumentation, agentBuilder, edgeClasses);
         } catch (Exception e) {
             LOGGER.error(e, "SkyWalking agent inject bootstrap instrumentation failure. Shutting down.");
@@ -113,6 +120,7 @@ public class SkyWalkingAgent {
             return;
         }
 
+        // 缓存增强的类
         if (Config.Agent.IS_CACHE_ENHANCED_CLASS) {
             try {
                 agentBuilder = agentBuilder.with(new CacheableTransformerDecorator(Config.Agent.CLASS_CACHE_MODE));
@@ -122,19 +130,23 @@ public class SkyWalkingAgent {
             }
         }
 
+        // pluginFinder.buildMatch() 用于指定要增强的类
         agentBuilder.type(pluginFinder.buildMatch())
-                    .transform(new Transformer(pluginFinder))
-                    .with(AgentBuilder.RedefinitionStrategy.RETRANSFORMATION)
-                    .with(new RedefinitionListener())
-                    .with(new Listener())
-                    .installOn(instrumentation);
+                .transform(new Transformer(pluginFinder))
+                .with(AgentBuilder.RedefinitionStrategy.RETRANSFORMATION)
+                // 指定监听器
+                .with(new RedefinitionListener())
+                .with(new Listener())
+                .installOn(instrumentation);
 
+        // 初始化所有实现了BootService接口的基础服务
         try {
             ServiceManager.INSTANCE.boot();
         } catch (Exception e) {
             LOGGER.error(e, "Skywalking agent boot failure.");
         }
 
+        // 注册JVM关闭事件钩子，触发 BootService 的 shutdown() 方法，进行内存清理、资源回收等工作，做优雅关闭
         Runtime.getRuntime()
                 .addShutdownHook(new Thread(ServiceManager.INSTANCE::shutdown, "skywalking service shutdown thread"));
     }

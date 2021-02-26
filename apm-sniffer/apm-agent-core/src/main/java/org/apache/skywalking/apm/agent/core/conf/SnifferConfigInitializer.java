@@ -18,6 +18,16 @@
 
 package org.apache.skywalking.apm.agent.core.conf;
 
+import org.apache.skywalking.apm.agent.core.boot.AgentPackageNotFoundException;
+import org.apache.skywalking.apm.agent.core.boot.AgentPackagePath;
+import org.apache.skywalking.apm.agent.core.logging.api.ILog;
+import org.apache.skywalking.apm.agent.core.logging.api.LogManager;
+import org.apache.skywalking.apm.agent.core.logging.core.JsonLogResolver;
+import org.apache.skywalking.apm.agent.core.logging.core.PatternLogResolver;
+import org.apache.skywalking.apm.util.ConfigInitializer;
+import org.apache.skywalking.apm.util.PropertyPlaceholderHelper;
+import org.apache.skywalking.apm.util.StringUtil;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -28,15 +38,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import org.apache.skywalking.apm.agent.core.boot.AgentPackageNotFoundException;
-import org.apache.skywalking.apm.agent.core.boot.AgentPackagePath;
-import org.apache.skywalking.apm.agent.core.logging.api.ILog;
-import org.apache.skywalking.apm.agent.core.logging.api.LogManager;
-import org.apache.skywalking.apm.agent.core.logging.core.JsonLogResolver;
-import org.apache.skywalking.apm.agent.core.logging.core.PatternLogResolver;
-import org.apache.skywalking.apm.util.ConfigInitializer;
-import org.apache.skywalking.apm.util.PropertyPlaceholderHelper;
-import org.apache.skywalking.apm.util.StringUtil;
 
 /**
  * The <code>SnifferConfigInitializer</code> initializes all configs in several way.
@@ -62,23 +63,27 @@ public class SnifferConfigInitializer {
      */
     public static void initializeCoreConfig(String agentOptions) {
         AGENT_SETTINGS = new Properties();
+        // 读取 /config/agent.config 配置，并且可配置环境变量来指定配置文件的路径(skywalking_config)
         try (final InputStreamReader configFileStream = loadConfig()) {
             AGENT_SETTINGS.load(configFileStream);
             for (String key : AGENT_SETTINGS.stringPropertyNames()) {
                 String value = (String) AGENT_SETTINGS.get(key);
+                // 使用系统环境变量对 agent.service_name=${SW_AGENT_NAME:Your_ApplicationName} 等配置进行占位符进行解析
+                // 同时支持 ${SW_AGENT_NAME:${ANOTHER_AGENT_NAME:Your_ApplicationName}} 等嵌套类型的解析
                 AGENT_SETTINGS.put(key, PropertyPlaceholderHelper.INSTANCE.replacePlaceholders(value, AGENT_SETTINGS));
             }
-
         } catch (Exception e) {
             LOGGER.error(e, "Failed to read the config file, skywalking is going to run in default config.");
         }
 
         try {
+            // 读取系统属性并覆盖。如：-Dskywalking.agent.service_name=yourAppName
             overrideConfigBySystemProp();
         } catch (Exception e) {
             LOGGER.error(e, "Failed to read the system properties.");
         }
 
+        // 读取agent启动参数并覆盖。如: -javaagent:/path/to/skywalking-agent.jar=agent.service_name=yourAppName
         agentOptions = StringUtil.trim(agentOptions, ',');
         if (!StringUtil.isEmpty(agentOptions)) {
             try {
@@ -91,11 +96,16 @@ public class SnifferConfigInitializer {
             }
         }
 
+        // 将配置值设置到全局 Config对象 的静态变量中
         initializeConfig(Config.class);
-        // reconfigure logger after config initialization
+        // 配置优先级: Agent Options() > System.Properties(-D) > System environment variables > Config file
+
+        // 配置 LOGGER
         configureLogger();
+        // 配置初始化后重新赋值 LOGGER
         LOGGER = LogManager.getLogger(SnifferConfigInitializer.class);
 
+        // 必要的配置校验，agent.service_name、collector.backend_service
         if (StringUtil.isEmpty(Config.Agent.SERVICE_NAME)) {
             throw new ExceptionInInitializerError("`agent.service_name` is missing.");
         }
@@ -104,8 +114,8 @@ public class SnifferConfigInitializer {
         }
         if (Config.Plugin.PEER_MAX_LENGTH <= 3) {
             LOGGER.warn(
-                "PEER_MAX_LENGTH configuration:{} error, the default value of 200 will be used.",
-                Config.Plugin.PEER_MAX_LENGTH
+                    "PEER_MAX_LENGTH configuration:{} error, the default value of 200 will be used.",
+                    Config.Plugin.PEER_MAX_LENGTH
             );
             Config.Plugin.PEER_MAX_LENGTH = 200;
         }
@@ -127,9 +137,9 @@ public class SnifferConfigInitializer {
             ConfigInitializer.initialize(AGENT_SETTINGS, configClass);
         } catch (IllegalAccessException e) {
             LOGGER.error(e,
-                         "Failed to set the agent settings {}"
-                             + " to Config={} ",
-                         AGENT_SETTINGS, configClass
+                    "Failed to set the agent settings {}"
+                            + " to Config={} ",
+                    AGENT_SETTINGS, configClass
             );
         }
     }
@@ -199,7 +209,7 @@ public class SnifferConfigInitializer {
     private static InputStreamReader loadConfig() throws AgentPackageNotFoundException, ConfigNotFoundException {
         String specifiedConfigPath = System.getProperty(SPECIFIED_CONFIG_PATH);
         File configFile = StringUtil.isEmpty(specifiedConfigPath) ? new File(
-            AgentPackagePath.getPath(), DEFAULT_CONFIG_FILE_NAME) : new File(specifiedConfigPath);
+                AgentPackagePath.getPath(), DEFAULT_CONFIG_FILE_NAME) : new File(specifiedConfigPath);
 
         if (configFile.exists() && configFile.isFile()) {
             try {

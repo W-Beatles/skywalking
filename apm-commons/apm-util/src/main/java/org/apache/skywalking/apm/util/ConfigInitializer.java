@@ -40,11 +40,13 @@ public class ConfigInitializer {
 
     private static void initNextLevel(Properties properties, Class<?> recentConfigType,
                                       ConfigDesc parentDesc) throws IllegalArgumentException, IllegalAccessException {
+        // 遍历所有静态变量并赋值
         for (Field field : recentConfigType.getFields()) {
             if (Modifier.isPublic(field.getModifiers()) && Modifier.isStatic(field.getModifiers())) {
                 String configKey = (parentDesc + "." + field.getName()).toLowerCase();
                 Class<?> type = field.getType();
 
+                // 处理map类型的静态变量
                 if (type.equals(Map.class)) {
                     /*
                      * Map config format is, config_key[map_key]=map_value
@@ -65,10 +67,12 @@ public class ConfigInitializer {
                     // Set the map from config key and properties
                     setForMapType(configKey, map, properties, keyType, valueType);
                 } else {
+                    // 处理基本类型配置
                     /*
                      * Others typical field type
                      */
                     String value = properties.getProperty(configKey);
+                    // 对长度进行处理
                     // Convert the value into real type
                     final Length lengthDefine = field.getAnnotation(Length.class);
                     if (lengthDefine != null) {
@@ -83,6 +87,7 @@ public class ConfigInitializer {
                 }
             }
         }
+        // 递归为所有内部类的静态变量赋值
         for (Class<?> innerConfiguration : recentConfigType.getClasses()) {
             parentDesc.append(innerConfiguration.getSimpleName());
             initNextLevel(properties, innerConfiguration, parentDesc);
