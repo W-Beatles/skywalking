@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+
 import lombok.RequiredArgsConstructor;
 import org.apache.skywalking.apm.agent.core.boot.AgentPackageNotFoundException;
 import org.apache.skywalking.apm.agent.core.boot.AgentPackagePath;
@@ -73,9 +74,14 @@ public class AgentClassLoader extends ClassLoader {
      * @throws AgentPackageNotFoundException if agent package is not found.
      */
     public static void initDefaultLoader() throws AgentPackageNotFoundException {
+        // 没有加volatile?
         if (DEFAULT_LOADER == null) {
             synchronized (AgentClassLoader.class) {
                 if (DEFAULT_LOADER == null) {
+                    // 创建Agent类加载器，并指定父加载器为 应用程序类加载器(AppClassLoader)
+                    // 这里为什么要自定义classLoader?
+                    //   1. 支持插件类的自定义加载行为。需要加载指定路径的jar包
+                    //   2. 资源隔离，不同的classLoader加载不同的classPath下的类
                     DEFAULT_LOADER = new AgentClassLoader(PluginBootstrap.class.getClassLoader());
                 }
             }
@@ -86,6 +92,7 @@ public class AgentClassLoader extends ClassLoader {
         super(parent);
         File agentDictionary = AgentPackagePath.getPath();
         classpath = new LinkedList<>();
+        // 默认加载plugins、activations两个文件夹下的jar包
         Config.Plugin.MOUNT.forEach(mountFolder -> classpath.add(new File(agentDictionary, mountFolder)));
     }
 
@@ -102,7 +109,7 @@ public class AgentClassLoader extends ClassLoader {
                 URL classFileUrl = new URL("jar:file:" + jar.sourceFile.getAbsolutePath() + "!/" + path);
                 byte[] data;
                 try (final BufferedInputStream is = new BufferedInputStream(
-                    classFileUrl.openStream()); final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+                        classFileUrl.openStream()); final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
                     int ch;
                     while ((ch = is.read()) != -1) {
                         baos.write(ch);

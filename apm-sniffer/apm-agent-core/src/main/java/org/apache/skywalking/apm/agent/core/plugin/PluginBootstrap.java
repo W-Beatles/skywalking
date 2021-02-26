@@ -18,13 +18,14 @@
 
 package org.apache.skywalking.apm.agent.core.plugin;
 
+import org.apache.skywalking.apm.agent.core.boot.AgentPackageNotFoundException;
+import org.apache.skywalking.apm.agent.core.logging.api.ILog;
+import org.apache.skywalking.apm.agent.core.logging.api.LogManager;
+import org.apache.skywalking.apm.agent.core.plugin.loader.AgentClassLoader;
+
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.skywalking.apm.agent.core.boot.AgentPackageNotFoundException;
-import org.apache.skywalking.apm.agent.core.plugin.loader.AgentClassLoader;
-import org.apache.skywalking.apm.agent.core.logging.api.ILog;
-import org.apache.skywalking.apm.agent.core.logging.api.LogManager;
 
 /**
  * Plugins finder. Use {@link PluginResourcesResolver} to find all plugins, and ask {@link PluginCfg} to load all plugin
@@ -39,8 +40,10 @@ public class PluginBootstrap {
      * @return plugin definition list.
      */
     public List<AbstractClassEnhancePluginDefine> loadPlugins() throws AgentPackageNotFoundException {
+        // 初始化默认的类加载器
         AgentClassLoader.initDefaultLoader();
 
+        // 使用 PluginResourcesResolver 去查找 AgentClassLoader 加载的所有插件描述文件 skywalking-plugin.def 的路径
         PluginResourcesResolver resolver = new PluginResourcesResolver();
         List<URL> resources = resolver.getResources();
 
@@ -64,7 +67,7 @@ public class PluginBootstrap {
             try {
                 LOGGER.debug("loading plugin class {}.", pluginDefine.getDefineClass());
                 AbstractClassEnhancePluginDefine plugin = (AbstractClassEnhancePluginDefine) Class.forName(pluginDefine.getDefineClass(), true, AgentClassLoader
-                    .getDefault()).newInstance();
+                        .getDefault()).newInstance();
                 plugins.add(plugin);
             } catch (Throwable t) {
                 LOGGER.error(t, "load plugin [{}] failure.", pluginDefine.getDefineClass());
