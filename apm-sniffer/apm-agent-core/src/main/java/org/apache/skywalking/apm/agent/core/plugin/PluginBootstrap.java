@@ -47,37 +47,41 @@ public class PluginBootstrap {
         PluginResourcesResolver resolver = new PluginResourcesResolver();
         List<URL> resources = resolver.getResources();
 
-        if (resources == null || resources.size() == 0) {
+        if (resources == null || resources.isEmpty()) {
             LOGGER.info("no plugin files (skywalking-plugin.def) found, continue to start application.");
-            return new ArrayList<AbstractClassEnhancePluginDefine>();
+            return new ArrayList<>();
         }
 
+        // 遍历插件描述文件的每一行，并构造成插件类信息的列表 List<PluginDefine>
         for (URL pluginUrl : resources) {
             try {
                 PluginCfg.INSTANCE.load(pluginUrl.openStream());
-            } catch (Throwable t) {
-                LOGGER.error(t, "plugin file [{}] init failure.", pluginUrl);
+            } catch (Exception e) {
+                LOGGER.error(e, "plugin file [{}] init failure.", pluginUrl);
             }
         }
 
+        // PluginDefine中记录了插件名称、插件类全类名。如：
+        //   name        :  activemq-5.x
+        //   defineClass :  org.apache.skywalking.apm.plugin.activemq.define.ActiveMQProducerInstrumentation
         List<PluginDefine> pluginClassList = PluginCfg.INSTANCE.getPluginClassList();
 
-        List<AbstractClassEnhancePluginDefine> plugins = new ArrayList<AbstractClassEnhancePluginDefine>();
+        List<AbstractClassEnhancePluginDefine> plugins = new ArrayList<>();
         for (PluginDefine pluginDefine : pluginClassList) {
             try {
                 LOGGER.debug("loading plugin class {}.", pluginDefine.getDefineClass());
+                // 通过反射构造插件对象
                 AbstractClassEnhancePluginDefine plugin = (AbstractClassEnhancePluginDefine) Class.forName(pluginDefine.getDefineClass(), true, AgentClassLoader
-                        .getDefault()).newInstance();
+                        .getDefault()).getDeclaredConstructor().newInstance();
                 plugins.add(plugin);
-            } catch (Throwable t) {
-                LOGGER.error(t, "load plugin [{}] failure.", pluginDefine.getDefineClass());
+            } catch (Exception e) {
+                LOGGER.error(e, "load plugin [{}] failure.", pluginDefine.getDefineClass());
             }
         }
 
+        // 支持apm-customize-enhance-plugin插件，只需要添加xml描述文件即可定义tag、log增强点
+        // 更多参见: /skywalking/docs/en/setup/service-agent/java-agent/Customize-enhance-trace.md
         plugins.addAll(DynamicPluginLoader.INSTANCE.load(AgentClassLoader.getDefault()));
-
         return plugins;
-
     }
-
 }

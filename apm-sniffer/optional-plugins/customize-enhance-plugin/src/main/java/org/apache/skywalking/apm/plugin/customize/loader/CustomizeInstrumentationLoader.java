@@ -42,21 +42,22 @@ public class CustomizeInstrumentationLoader implements InstrumentationLoader {
 
     @Override
     public List<AbstractClassEnhancePluginDefine> load(AgentClassLoader classLoader) {
-        List<AbstractClassEnhancePluginDefine> instrumentations = new ArrayList<AbstractClassEnhancePluginDefine>();
+        List<AbstractClassEnhancePluginDefine> instrumentations = new ArrayList<>();
         CustomizeConfiguration.INSTANCE.loadForEnhance();
         Set<String> enhanceClasses = CustomizeConfiguration.INSTANCE.getInstrumentations();
         try {
             for (String enhanceClass : enhanceClasses) {
                 String[] classDesc = CustomizeUtil.getClassDesc(enhanceClass);
-                AbstractClassEnhancePluginDefine plugin = (AbstractClassEnhancePluginDefine) Class.forName(Boolean.valueOf(classDesc[1]) ? CustomizeStaticInstrumentation.class
-                    .getName() : CustomizeInstanceInstrumentation.class.getName(), true, classLoader)
-                                                                                                  .getConstructor(String.class)
-                                                                                                  .newInstance(classDesc[0]);
+                AbstractClassEnhancePluginDefine plugin = (AbstractClassEnhancePluginDefine) Class.forName(Boolean.parseBoolean(classDesc[1])
+                        ? CustomizeStaticInstrumentation.class.getName()
+                        : CustomizeInstanceInstrumentation.class.getName(), true, classLoader)
+                        .getConstructor(String.class)
+                        .newInstance(classDesc[0]);
                 instrumentations.add(plugin);
             }
         } catch (Exception e) {
             LOGGER.error(e, "InstrumentationLoader loader is error, spi loader is {}", CustomizeInstrumentationLoader.class
-                .getName());
+                    .getName());
         }
         return instrumentations;
     }

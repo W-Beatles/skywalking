@@ -34,7 +34,8 @@ public enum DynamicPluginLoader {
     INSTANCE;
 
     public List<AbstractClassEnhancePluginDefine> load(AgentClassLoader classLoader) {
-        List<AbstractClassEnhancePluginDefine> all = new ArrayList<AbstractClassEnhancePluginDefine>();
+        List<AbstractClassEnhancePluginDefine> all = new ArrayList<>();
+        // SPI机制加载InstrumentationLoader实例
         for (InstrumentationLoader instrumentationLoader : ServiceLoader.load(InstrumentationLoader.class, classLoader)) {
             List<AbstractClassEnhancePluginDefine> plugins = instrumentationLoader.load(classLoader);
             if (plugins != null && !plugins.isEmpty()) {

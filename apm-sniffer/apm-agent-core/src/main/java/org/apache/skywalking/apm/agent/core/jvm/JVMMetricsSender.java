@@ -61,6 +61,7 @@ public class JVMMetricsSender implements BootService, Runnable, GRPCChannelListe
 
     public void offer(JVMMetric metric) {
         // drop last message and re-deliver
+        // TODO: 2021/2/27 为什么要放进去，拿出来，放进去？
         if (!queue.offer(metric)) {
             queue.poll();
             queue.offer(metric);
@@ -73,17 +74,20 @@ public class JVMMetricsSender implements BootService, Runnable, GRPCChannelListe
             try {
                 JVMMetricCollection.Builder builder = JVMMetricCollection.newBuilder();
                 LinkedList<JVMMetric> buffer = new LinkedList<>();
+                // 一次性从BlockingQueue获取所有可用的数据对象(还可以指定获取数据的个数)
+                // 通过该方法，可以提升获取数据效率；不需要多次分批加锁或释放锁。
                 queue.drainTo(buffer);
-                if (buffer.size() > 0) {
+                if (!buffer.isEmpty()) {
                     builder.addAllMetrics(buffer);
                     builder.setService(Config.Agent.SERVICE_NAME);
                     builder.setServiceInstance(Config.Agent.INSTANCE_NAME);
                     Commands commands = stub.withDeadlineAfter(GRPC_UPSTREAM_TIMEOUT, TimeUnit.SECONDS)
                                             .collect(builder.build());
+                    // 上报JVM指标信息
                     ServiceManager.INSTANCE.findService(CommandService.class).receiveCommand(commands);
                 }
-            } catch (Throwable t) {
-                LOGGER.error(t, "send JVM metrics to Collector fail.");
+            } catch (Exception e) {
+                LOGGER.error(e, "send JVM metrics to Collector fail.");
             }
         }
     }

@@ -49,11 +49,13 @@ public class JVMService implements BootService, Runnable {
 
     @Override
     public void prepare() throws Throwable {
+        // 实例化发送对象
         sender = ServiceManager.INSTANCE.findService(JVMMetricsSender.class);
     }
 
     @Override
     public void boot() throws Throwable {
+        // 发送线程定时添加JVM指标到发送者队列，队列长度默认600
         collectMetricFuture = Executors.newSingleThreadScheduledExecutor(
             new DefaultNamedThreadFactory("JVMService-produce"))
                                        .scheduleAtFixedRate(new RunnableWithExceptionProtection(

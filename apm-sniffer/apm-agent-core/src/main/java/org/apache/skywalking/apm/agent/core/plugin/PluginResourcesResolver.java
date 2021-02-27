@@ -34,9 +34,11 @@ public class PluginResourcesResolver {
     private static final ILog LOGGER = LogManager.getLogger(PluginResourcesResolver.class);
 
     public List<URL> getResources() {
-        List<URL> cfgUrlPaths = new ArrayList<URL>();
+        List<URL> cfgUrlPaths = new ArrayList<>();
         Enumeration<URL> urls;
         try {
+            // 获取所有插件定义文件路径
+            // jar:file:D:\workspace\skywalking\skywalking-agent\plugins\apm-activemq-5.x-plugin-8.5.0-SNAPSHOT.jar!/skywalking-plugin.def
             urls = AgentClassLoader.getDefault().getResources("skywalking-plugin.def");
 
             while (urls.hasMoreElements()) {

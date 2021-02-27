@@ -18,15 +18,16 @@
 
 package org.apache.skywalking.apm.agent.core.boot;
 
+import org.apache.skywalking.apm.agent.core.logging.api.ILog;
+import org.apache.skywalking.apm.agent.core.logging.api.LogManager;
+import org.apache.skywalking.apm.agent.core.plugin.loader.AgentClassLoader;
+
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
-import org.apache.skywalking.apm.agent.core.logging.api.ILog;
-import org.apache.skywalking.apm.agent.core.logging.api.LogManager;
-import org.apache.skywalking.apm.agent.core.plugin.loader.AgentClassLoader;
 
 /**
  * The <code>ServiceManager</code> bases on {@link ServiceLoader}, load all {@link BootService} implementations.
@@ -40,6 +41,7 @@ public enum ServiceManager {
     public void boot() {
         bootedServices = loadAllServices();
 
+        // 调用BootService的生命周期方法，初始化所有基础服务
         prepare();
         startup();
         onComplete();
@@ -58,9 +60,12 @@ public enum ServiceManager {
     private Map<Class, BootService> loadAllServices() {
         Map<Class, BootService> bootedServices = new LinkedHashMap<>();
         List<BootService> allServices = new LinkedList<>();
+        // 基于SPI加载所有BootService服务
         load(allServices);
         for (final BootService bootService : allServices) {
             Class<? extends BootService> bootServiceClass = bootService.getClass();
+            // 判断该服务是否是默认实现。SW提供覆盖Service默认实现的能力
+            // @DefaultImplementor注解标注的为默认实现，@OverrideImplementor标注的是服务的覆盖实现
             boolean isDefaultImplementor = bootServiceClass.isAnnotationPresent(DefaultImplementor.class);
             if (isDefaultImplementor) {
                 if (!bootedServices.containsKey(bootServiceClass)) {
@@ -77,23 +82,23 @@ public enum ServiceManager {
                         throw new ServiceConflictException("Duplicate service define for :" + bootServiceClass);
                     }
                 } else {
+                    // 覆盖默认实现。覆盖实现只能覆盖默认实现，并且默认实现有且只能有唯一一个覆盖实现
                     Class<? extends BootService> targetService = overrideImplementor.value();
                     if (bootedServices.containsKey(targetService)) {
                         boolean presentDefault = bootedServices.get(targetService)
-                                                               .getClass()
-                                                               .isAnnotationPresent(DefaultImplementor.class);
+                                .getClass()
+                                .isAnnotationPresent(DefaultImplementor.class);
                         if (presentDefault) {
                             bootedServices.put(targetService, bootService);
                         } else {
                             throw new ServiceConflictException(
-                                "Service " + bootServiceClass + " overrides conflict, " + "exist more than one service want to override :" + targetService);
+                                    "Service " + bootServiceClass + " overrides conflict, " + "exist more than one service want to override :" + targetService);
                         }
                     } else {
                         bootedServices.put(targetService, bootService);
                     }
                 }
             }
-
         }
         return bootedServices;
     }

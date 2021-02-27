@@ -77,8 +77,8 @@ public class SkyWalkingAgent {
         }
 
         try {
-            // 使用 new PluginBootstrap().loadPlugins() 读取所有插件描述文件
-            // 使用 PluginFinder 对插件进行分类，分类的目的是使 find() 方法可以查找到某个类匹配的所有插件
+            // 使用 new PluginBootstrap().loadPlugins() 加载所有插件实例对象
+            // 使用 PluginFinder 对插件进行分类。分类的目的是使 find() 方法可以查找到某个类匹配的所有插件
             pluginFinder = new PluginFinder(new PluginBootstrap().loadPlugins());
         } catch (AgentPackageNotFoundException ape) {
             LOGGER.error(ape, "Locate agent.jar failure. Shutting down.");
@@ -88,8 +88,8 @@ public class SkyWalkingAgent {
             return;
         }
 
-        // 创建 ByteBuddy 对象，并且可配置是否开启 debug模式 (agent.is_open_debugging_class=true)
-        // debug模式可以将 JavaAgent 增强的类放到 /debugger 目录下
+        // 创建 ByteBuddy 对象，可配置是否开启 debug 模式 (agent.is_open_debugging_class=true)
+        // debug 模式可以将 JavaAgent 增强的类放到 /debugger 目录下
         final ByteBuddy byteBuddy = new ByteBuddy().with(TypeValidation.of(Config.Agent.IS_OPEN_DEBUGGING_CLASS));
 
         // 指定不需要增强的类

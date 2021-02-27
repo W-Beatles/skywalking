@@ -41,8 +41,10 @@ public enum PluginCfg {
         try {
             BufferedReader reader = new BufferedReader(new InputStreamReader(input));
             String pluginDefine;
+            // 逐行读取插件描述文件
             while ((pluginDefine = reader.readLine()) != null) {
                 try {
+                    // 忽略空行和注释行
                     if (pluginDefine.trim().length() == 0 || pluginDefine.startsWith("#")) {
                         continue;
                     }
@@ -52,6 +54,7 @@ public enum PluginCfg {
                     LOGGER.error(e, "Failed to format plugin({}) define.", pluginDefine);
                 }
             }
+            // PluginSelector 用于支持去排除指定的插件 (plugin.exclude_plugins)
             pluginClassList = pluginSelector.select(pluginClassList);
         } finally {
             input.close();

@@ -18,11 +18,6 @@
 
 package org.apache.skywalking.apm.agent.core.plugin;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
 import net.bytebuddy.description.NamedElement;
 import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.matcher.ElementMatcher;
@@ -32,6 +27,12 @@ import org.apache.skywalking.apm.agent.core.plugin.match.IndirectMatch;
 import org.apache.skywalking.apm.agent.core.plugin.match.NameMatch;
 import org.apache.skywalking.apm.agent.core.plugin.match.ProtectiveShieldMatcher;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+
 import static net.bytebuddy.matcher.ElementMatchers.isInterface;
 import static net.bytebuddy.matcher.ElementMatchers.not;
 
@@ -40,9 +41,12 @@ import static net.bytebuddy.matcher.ElementMatchers.not;
  * AbstractClassEnhancePluginDefine} list.
  */
 public class PluginFinder {
-    private final Map<String, LinkedList<AbstractClassEnhancePluginDefine>> nameMatchDefine = new HashMap<String, LinkedList<AbstractClassEnhancePluginDefine>>();
-    private final List<AbstractClassEnhancePluginDefine> signatureMatchDefine = new ArrayList<AbstractClassEnhancePluginDefine>();
-    private final List<AbstractClassEnhancePluginDefine> bootstrapClassMatchDefine = new ArrayList<AbstractClassEnhancePluginDefine>();
+    // 基于全类名匹配的插件
+    private final Map<String, LinkedList<AbstractClassEnhancePluginDefine>> nameMatchDefine = new HashMap<>();
+    // 通过类注释、继承关系、回调结果等辅助匹配的插件
+    private final List<AbstractClassEnhancePluginDefine> signatureMatchDefine = new ArrayList<>();
+    // 核心代理插件
+    private final List<AbstractClassEnhancePluginDefine> bootstrapClassMatchDefine = new ArrayList<>();
 
     public PluginFinder(List<AbstractClassEnhancePluginDefine> plugins) {
         for (AbstractClassEnhancePluginDefine plugin : plugins) {
@@ -56,7 +60,7 @@ public class PluginFinder {
                 NameMatch nameMatch = (NameMatch) match;
                 LinkedList<AbstractClassEnhancePluginDefine> pluginDefines = nameMatchDefine.get(nameMatch.getClassName());
                 if (pluginDefines == null) {
-                    pluginDefines = new LinkedList<AbstractClassEnhancePluginDefine>();
+                    pluginDefines = new LinkedList<>();
                     nameMatchDefine.put(nameMatch.getClassName(), pluginDefines);
                 }
                 pluginDefines.add(plugin);
