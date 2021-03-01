@@ -16,6 +16,7 @@ Release Notes.
 * Enhance gRPC log appender to allow layout pattern.
 * Fix apm-dubbo-2.7.x-plugin memory leak due to some Dubbo RpcExceptions.
 * Fix lettuce-5.x-plugin get null host in redis sentinel mode.
+* Fix ClassCastException by making CallbackAdapterInterceptor to implement EnhancedInstance interface in the spring-kafka plugin.
 
 #### OAP-Backend
 * Allow user-defined `JAVA_OPTS` in the startup script.
@@ -36,6 +37,8 @@ Release Notes.
 * Remove the experimental Zipkin span analyzer.
 * Upgrade the Zipkin Elasticsearch storage from 6 to 7.
 * Require Zipkin receiver must work with `zipkin-elasticsearch7` storage option.
+* Fix `DatabaseSlowStatementBuilder` statement maybe null.
+* Remove fields of parent entity in the relation sources. 
 
 #### UI
 * Update selector scroller to show in all pages.
