@@ -19,6 +19,7 @@
 package org.apache.skywalking.oap.server.starter;
 
 /**
+ * OAP后台服务入口
  * OAP starter specific for the ES7 storage. This includes the same code of OAPServerStartUp in the `server-starter`
  * module.
  */

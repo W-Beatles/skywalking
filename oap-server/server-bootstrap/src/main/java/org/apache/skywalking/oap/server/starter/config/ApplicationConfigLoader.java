@@ -18,12 +18,6 @@
 
 package org.apache.skywalking.oap.server.starter.config;
 
-import java.io.FileNotFoundException;
-import java.io.Reader;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.skywalking.apm.util.PropertyPlaceholderHelper;
 import org.apache.skywalking.oap.server.library.module.ApplicationConfiguration;
@@ -31,6 +25,13 @@ import org.apache.skywalking.oap.server.library.module.ProviderNotFoundException
 import org.apache.skywalking.oap.server.library.util.CollectionUtils;
 import org.apache.skywalking.oap.server.library.util.ResourceUtils;
 import org.yaml.snakeyaml.Yaml;
+
+import java.io.FileNotFoundException;
+import java.io.Reader;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
 
 /**
  * Initialize collector settings with following sources. Use application.yml as primary setting, and fix missing setting
@@ -48,7 +49,9 @@ public class ApplicationConfigLoader implements ConfigLoader<ApplicationConfigur
     @Override
     public ApplicationConfiguration load() throws ConfigFileNotFoundException {
         ApplicationConfiguration configuration = new ApplicationConfiguration();
+        // 读取 application.yml 配置
         this.loadConfig(configuration);
+        // 系统配置优先级更高，覆盖文件中的配置 System.Properties(-D)
         this.overrideConfigBySystemEnv(configuration);
         return configuration;
     }
@@ -56,24 +59,29 @@ public class ApplicationConfigLoader implements ConfigLoader<ApplicationConfigur
     @SuppressWarnings("unchecked")
     private void loadConfig(ApplicationConfiguration configuration) throws ConfigFileNotFoundException {
         try {
+            // 读取resource目录下的application.yml配置
             Reader applicationReader = ResourceUtils.read("application.yml");
+            // 多层嵌套的key-value形式
             Map<String, Map<String, Object>> moduleConfig = yaml.loadAs(applicationReader, Map.class);
             if (CollectionUtils.isNotEmpty(moduleConfig)) {
+                // 遍历每一个模块配置，并根据select配置选择出有效的配置
                 selectConfig(moduleConfig);
+                // 遍历有效的模块配置
                 moduleConfig.forEach((moduleName, providerConfig) -> {
                     if (providerConfig.size() > 0) {
                         log.info("Get a module define from application.yml, module name: {}", moduleName);
                         ApplicationConfiguration.ModuleConfiguration moduleConfiguration = configuration.addModule(
-                            moduleName);
+                                moduleName);
                         providerConfig.forEach((providerName, config) -> {
                             log.info(
-                                "Get a provider define belong to {} module, provider name: {}", moduleName,
-                                providerName
+                                    "Get a provider define belong to {} module, provider name: {}", moduleName,
+                                    providerName
                             );
                             final Map<String, ?> propertiesConfig = (Map<String, ?>) config;
                             final Properties properties = new Properties();
                             if (propertiesConfig != null) {
                                 propertiesConfig.forEach((propertyName, propertyValue) -> {
+                                    // 转换map类型的配置
                                     if (propertyValue instanceof Map) {
                                         Properties subProperties = new Properties();
                                         ((Map) propertyValue).forEach((key, value) -> {
@@ -91,8 +99,8 @@ public class ApplicationConfigLoader implements ConfigLoader<ApplicationConfigur
                         });
                     } else {
                         log.warn(
-                            "Get a module define from application.yml, but no provider define, use default, module name: {}",
-                            moduleName
+                                "Get a module define from application.yml, but no provider define, use default, module name: {}",
+                                moduleName
                         );
                     }
                 });
@@ -105,7 +113,7 @@ public class ApplicationConfigLoader implements ConfigLoader<ApplicationConfigur
     private void replacePropertyAndLog(final Object propertyName, final Object propertyValue, final Properties target,
                                        final Object providerName) {
         final String valueString = PropertyPlaceholderHelper.INSTANCE
-            .replacePlaceholders(propertyValue + "", target);
+                .replacePlaceholders(propertyValue + "", target);
         if (valueString != null) {
             if (valueString.trim().length() == 0) {
                 target.replace(propertyName, valueString);
@@ -116,10 +124,10 @@ public class ApplicationConfigLoader implements ConfigLoader<ApplicationConfigur
                 if (replaceValue != null) {
                     target.replace(propertyName, replaceValue);
                     log.info(
-                        "Provider={} config={} has been set as {}",
-                        providerName,
-                        propertyName,
-                        replaceValue.toString()
+                            "Provider={} config={} has been set as {}",
+                            providerName,
+                            propertyName,
+                            replaceValue.toString()
                     );
                 }
             }
@@ -134,34 +142,39 @@ public class ApplicationConfigLoader implements ConfigLoader<ApplicationConfigur
 
     private void selectConfig(final Map<String, Map<String, Object>> moduleConfiguration) {
         final Set<String> modulesWithoutProvider = new HashSet<>();
+        // 遍历每一个模块
         for (final Map.Entry<String, Map<String, Object>> entry : moduleConfiguration.entrySet()) {
             final String moduleName = entry.getKey();
             final Map<String, Object> providerConfig = entry.getValue();
+            // 如果该模块没有selector节点，将忽略该模块的配置
             if (!providerConfig.containsKey(SELECTOR)) {
                 continue;
             }
+            // 解析模块selector的值
             final String selector = (String) providerConfig.get(SELECTOR);
             final String resolvedSelector = PropertyPlaceholderHelper.INSTANCE.replacePlaceholders(
-                selector, System.getProperties()
+                    selector, System.getProperties()
             );
+            // 将该模块未选择的配置全部移除
             providerConfig.entrySet().removeIf(e -> !resolvedSelector.equals(e.getKey()));
 
             if (!providerConfig.isEmpty()) {
                 continue;
             }
-
+            // 未找到指定的选择器，则提示报错不存在该模块
             if (!DISABLE_SELECTOR.equals(resolvedSelector)) {
                 throw new ProviderNotFoundException(
-                    "no provider found for module " + moduleName + ", " +
-                        "if you're sure it's not required module and want to remove it, " +
-                        "set the selector to -"
+                        "no provider found for module " + moduleName + ", " +
+                                "if you're sure it's not required module and want to remove it, " +
+                                "set the selector to -"
                 );
             }
-
+            // 选择器值为-，则直接移除该模块 selector: ${SW_RECEIVER_ZABBIX:-}
             // now the module can be safely removed
             modulesWithoutProvider.add(moduleName);
         }
 
+        // 这里真正移除模块，因为不能一边遍历一边删除
         moduleConfiguration.entrySet().removeIf(e -> {
             final String module = e.getKey();
             final boolean shouldBeRemoved = modulesWithoutProvider.contains(module);
@@ -182,7 +195,7 @@ public class ApplicationConfigLoader implements ConfigLoader<ApplicationConfigur
         String moduleName = key.substring(0, moduleAndConfigSeparator);
         String providerSettingSubKey = key.substring(moduleAndConfigSeparator + 1);
         ApplicationConfiguration.ModuleConfiguration moduleConfiguration = configuration.getModuleConfiguration(
-            moduleName);
+                moduleName);
         if (moduleConfiguration == null) {
             return;
         }
@@ -214,8 +227,8 @@ public class ApplicationConfigLoader implements ConfigLoader<ApplicationConfigur
         }
 
         log.info(
-            "The setting has been override by key: {}, value: {}, in {} provider of {} module through {}", settingKey,
-            value, providerName, moduleName, "System.properties"
+                "The setting has been override by key: {}, value: {}, in {} provider of {} module through {}", settingKey,
+                value, providerName, moduleName, "System.properties"
         );
     }
 }

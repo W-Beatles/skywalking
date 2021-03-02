@@ -33,21 +33,23 @@ import org.apache.skywalking.oap.server.telemetry.api.MetricsTag;
 @Slf4j
 public class OAPServerBootstrap {
     public static void start() {
+        // 支持配置启动模式，mode=init将会初始化存储，如es索引、数据库表等
         String mode = System.getProperty("mode");
         RunningMode.setMode(mode);
 
         ApplicationConfigLoader configLoader = new ApplicationConfigLoader();
         ModuleManager manager = new ModuleManager();
         try {
+            // 加载 application.yml 配置
             ApplicationConfiguration applicationConfiguration = configLoader.load();
             manager.init(applicationConfiguration);
 
             manager.find(TelemetryModule.NAME)
-                   .provider()
-                   .getService(MetricsCreator.class)
-                   .createGauge("uptime", "oap server start up time", MetricsTag.EMPTY_KEY, MetricsTag.EMPTY_VALUE)
-                   // Set uptime to second
-                   .setValue(System.currentTimeMillis() / 1000d);
+                    .provider()
+                    .getService(MetricsCreator.class)
+                    .createGauge("uptime", "oap server start up time", MetricsTag.EMPTY_KEY, MetricsTag.EMPTY_VALUE)
+                    // Set uptime to second
+                    .setValue(System.currentTimeMillis() / 1000d);
 
             if (RunningMode.isInitMode()) {
                 log.info("OAP starts up in init mode successfully, exit now...");
