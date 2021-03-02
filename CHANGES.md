@@ -39,10 +39,15 @@ Release Notes.
 * Require Zipkin receiver must work with `zipkin-elasticsearch7` storage option.
 * Fix `DatabaseSlowStatementBuilder` statement maybe null.
 * Remove fields of parent entity in the relation sources. 
+* Save Envoy http access logs when error occurs.
 
 #### UI
 * Update selector scroller to show in all pages.
 * Implement searching logs with date.
+* Add nodejs 14 compiling.
+* Fix trace id by clear search conditions.
+* Search endpoints with keywords.
+* Fix pageSize on logs page.
 
 #### Documentation
 * Polish documentation due to we have covered all tracing, logging, and metrics fields.
