@@ -16,15 +16,25 @@
  *
  */
 
-package org.apache.skywalking.oap.server.starter;
+package org.apache.skywalking.oap.server.receiver.envoy;
 
-/**
- * OAP后台服务入口
- * OAP starter specific for the ES7 storage. This includes the same code of OAPServerStartUp in the `server-starter`
- * module.
- */
-public class OAPServerStartUp {
-    public static void main(String[] args) {
-        OAPServerBootstrap.start();
+import com.google.protobuf.Struct;
+import org.apache.skywalking.oap.server.receiver.envoy.als.ServiceMetaInfo;
+import org.apache.skywalking.oap.server.receiver.envoy.als.mx.ServiceMetaInfoAdapter;
+
+public class ServiceMetaInfoFactoryImpl implements ServiceMetaInfoFactory {
+    @Override
+    public Class<? extends ServiceMetaInfo> clazz() {
+        return ServiceMetaInfo.class;
+    }
+
+    @Override
+    public ServiceMetaInfo unknown() {
+        return new ServiceMetaInfo("UNKNOWN", "UNKNOWN");
+    }
+
+    @Override
+    public ServiceMetaInfo fromStruct(final Struct struct) throws Exception {
+        return new ServiceMetaInfoAdapter(struct);
     }
 }

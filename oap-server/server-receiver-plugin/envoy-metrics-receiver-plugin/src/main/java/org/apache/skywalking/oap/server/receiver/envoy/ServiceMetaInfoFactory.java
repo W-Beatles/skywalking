@@ -16,15 +16,27 @@
  *
  */
 
-package org.apache.skywalking.oap.server.starter;
+package org.apache.skywalking.oap.server.receiver.envoy;
+
+import com.google.protobuf.Struct;
+import org.apache.skywalking.oap.server.receiver.envoy.als.ServiceMetaInfo;
 
 /**
- * OAP后台服务入口
- * OAP starter specific for the ES7 storage. This includes the same code of OAPServerStartUp in the `server-starter`
- * module.
+ * Factory to create {@link ServiceMetaInfo} instances from Kubernetes Pods, Envoy access log metadata, etc.
  */
-public class OAPServerStartUp {
-    public static void main(String[] args) {
-        OAPServerBootstrap.start();
-    }
+public interface ServiceMetaInfoFactory {
+    /**
+     * @return the {@link Class} of the {@link ServiceMetaInfo} implementation.
+     */
+    Class<? extends ServiceMetaInfo> clazz();
+
+    /**
+     * @return an UNKNOWN instance of {@link ServiceMetaInfo}.
+     */
+    ServiceMetaInfo unknown();
+
+    /**
+     * Create an instance of {@link ServiceMetaInfo} from the given {@link Struct protobuf struct}.
+     */
+    ServiceMetaInfo fromStruct(final Struct struct) throws Exception;
 }
