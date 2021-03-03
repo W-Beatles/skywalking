@@ -18,7 +18,6 @@
 
 package org.apache.skywalking.apm.agent.core.context;
 
-import java.util.Objects;
 import org.apache.skywalking.apm.agent.core.boot.BootService;
 import org.apache.skywalking.apm.agent.core.boot.ServiceManager;
 import org.apache.skywalking.apm.agent.core.context.trace.AbstractSpan;
@@ -28,9 +27,12 @@ import org.apache.skywalking.apm.agent.core.logging.api.LogManager;
 import org.apache.skywalking.apm.agent.core.sampling.SamplingService;
 import org.apache.skywalking.apm.util.StringUtil;
 
+import java.util.Objects;
+
 import static org.apache.skywalking.apm.agent.core.conf.Config.Agent.OPERATION_NAME_THRESHOLD;
 
 /**
+ * 上下文管理器，代理了AbstractTracerContext的主要方法，用于创建span等操作
  * {@link ContextManager} controls the whole context of {@link TraceSegment}. Any {@link TraceSegment} relates to
  * single-thread, so this context use {@link ThreadLocal} to maintain the context, and make sure, since a {@link
  * TraceSegment} starts, all ChildOf spans are in the same context. <p> What is 'ChildOf'?

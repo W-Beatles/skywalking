@@ -44,11 +44,13 @@ public class RabbitMQConsumerInterceptor implements InstanceMethodsAroundInterce
         String url = (String) objInst.getSkyWalkingDynamicField();
         Envelope envelope = (Envelope) allArguments[1];
         AMQP.BasicProperties properties = (AMQP.BasicProperties) allArguments[2];
+        // 创建span，本质是往ThreadLocal里面设值
         AbstractSpan activeSpan = ContextManager.createEntrySpan(OPERATE_NAME_PREFIX + "Topic/" + envelope.getExchange() + "Queue/" + envelope
             .getRoutingKey() + CONSUMER_OPERATE_NAME_SUFFIX, null).start(System.currentTimeMillis());
         Tags.MQ_BROKER.set(activeSpan, url);
         Tags.MQ_TOPIC.set(activeSpan, envelope.getExchange());
         Tags.MQ_QUEUE.set(activeSpan, envelope.getRoutingKey());
+        // 设置组件名，以供UI显示支持
         activeSpan.setComponent(ComponentsDefine.RABBITMQ_CONSUMER);
         SpanLayer.asMQ(activeSpan);
         CarrierItem next = contextCarrier.items();
@@ -59,20 +61,20 @@ public class RabbitMQConsumerInterceptor implements InstanceMethodsAroundInterce
             }
         }
         ContextManager.extract(contextCarrier);
-
     }
 
     @Override
     public Object afterMethod(EnhancedInstance objInst, Method method, Object[] allArguments, Class<?>[] argumentsTypes,
         Object ret) throws Throwable {
+        // 停止span，本质是删除ThreadLocal里面的值
         ContextManager.stopSpan();
         return ret;
-
     }
 
     @Override
     public void handleMethodException(EnhancedInstance objInst, Method method, Object[] allArguments,
         Class<?>[] argumentsTypes, Throwable t) {
+        // 记录日志
         ContextManager.activeSpan().log(t);
     }
 }
