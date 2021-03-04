@@ -26,16 +26,18 @@ import io.grpc.ClientInterceptors;
 import io.grpc.ForwardingClientCall;
 import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
+import org.apache.skywalking.apm.agent.core.logging.api.ILog;
+import org.apache.skywalking.apm.agent.core.logging.api.LogManager;
+
 import java.io.InputStream;
 import java.net.URL;
 import java.util.Enumeration;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
-import org.apache.skywalking.apm.agent.core.logging.api.ILog;
-import org.apache.skywalking.apm.agent.core.logging.api.LogManager;
 
 /**
+ * 把插件版本号设置到请求头中
  * Add agent version(Described in MANIFEST.MF) to the connection establish stage.
  */
 public class AgentIDDecorator implements ChannelDecorator {
@@ -45,6 +47,7 @@ public class AgentIDDecorator implements ChannelDecorator {
 
     public AgentIDDecorator() {
         try {
+            // 从 MANIFEST.MF 文件中获取
             Enumeration<URL> resources = AgentIDDecorator.class.getClassLoader().getResources(JarFile.MANIFEST_NAME);
             while (resources.hasMoreElements()) {
                 URL url = resources.nextElement();
@@ -52,9 +55,11 @@ public class AgentIDDecorator implements ChannelDecorator {
                     if (is != null) {
                         Manifest manifest = new Manifest(is);
                         Attributes mainAttribs = manifest.getMainAttributes();
+                        // 定义扩展实现的组织的标识
                         String projectName = mainAttribs.getValue("Implementation-Vendor-Id");
                         if (projectName != null) {
                             if ("org.apache.skywalking".equals(projectName)) {
+                                // 定义扩展规范的版本
                                 version = mainAttribs.getValue("Implementation-Version");
                             }
                         }
@@ -71,7 +76,7 @@ public class AgentIDDecorator implements ChannelDecorator {
         return ClientInterceptors.intercept(channel, new ClientInterceptor() {
             @Override
             public <REQ, RESP> ClientCall<REQ, RESP> interceptCall(MethodDescriptor<REQ, RESP> method,
-                CallOptions options, Channel channel) {
+                                                                   CallOptions options, Channel channel) {
                 return new ForwardingClientCall.SimpleForwardingClientCall<REQ, RESP>(channel.newCall(method, options)) {
                     @Override
                     public void start(Listener<RESP> responseListener, Metadata headers) {

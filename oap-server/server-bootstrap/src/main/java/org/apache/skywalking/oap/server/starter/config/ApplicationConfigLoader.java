@@ -174,7 +174,7 @@ public class ApplicationConfigLoader implements ConfigLoader<ApplicationConfigur
             modulesWithoutProvider.add(moduleName);
         }
 
-        // 这里真正移除模块，因为不能一边遍历一边删除
+        // 这里真正移除模块。因为要删除多个元素，采用统一删除的方式时间降低到2n
         moduleConfiguration.entrySet().removeIf(e -> {
             final String module = e.getKey();
             final boolean shouldBeRemoved = modulesWithoutProvider.contains(module);

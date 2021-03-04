@@ -27,7 +27,9 @@ public class StandardChannelBuilder implements ChannelBuilder {
     @Override
     public ManagedChannelBuilder build(ManagedChannelBuilder managedChannelBuilder) {
         return managedChannelBuilder.nameResolverFactory(new DnsNameResolverProvider())
+                                    // 设置Channel上允许接受的最大数据大小为50M
                                     .maxInboundMessageSize(MAX_INBOUND_MESSAGE_SIZE)
+                                    // 使用明文传输
                                     .usePlaintext();
     }
 }

@@ -43,16 +43,23 @@ import java.util.stream.Collectors;
 import static org.apache.skywalking.apm.agent.core.conf.Config.Collector.IS_RESOLVE_DNS_PERIODICALLY;
 
 /**
- * grpc连接管理器，持有有效的channel连接，并支持短线重连和状态改变触发监听器回调
+ * GRPC连接服务，持有有效的channel连接供agent和oap后调通信，并支持短线重连和状态改变触发监听器回调
  */
 @DefaultImplementor
 public class GRPCChannelManager implements BootService, Runnable {
     private static final ILog LOGGER = LogManager.getLogger(GRPCChannelManager.class);
 
+    /**
+     * 对原始的ManagedChannel做了一层包装
+     */
     private volatile GRPCChannel managedChannel = null;
     private volatile ScheduledFuture<?> connectCheckFuture;
+    /**
+     * 重连标志位
+     */
     private volatile boolean reconnect = true;
     private final Random random = new Random();
+    // 监听器模式，添加/维护事件监听者列表以供GRPC连接变化时触发通知
     private final List<GRPCChannelListener> listeners = Collections.synchronizedList(new LinkedList<>());
     private volatile List<String> grpcServers;
     private volatile int selectedIdx = -1;
@@ -190,6 +197,9 @@ public class GRPCChannelManager implements BootService, Runnable {
         }
     }
 
+    /**
+     * 触发监听器回调
+     */
     private void notify(GRPCChannelStatus status) {
         for (GRPCChannelListener listener : listeners) {
             try {

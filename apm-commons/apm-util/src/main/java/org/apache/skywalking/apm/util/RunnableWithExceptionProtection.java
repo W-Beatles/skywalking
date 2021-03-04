@@ -18,6 +18,9 @@
 
 package org.apache.skywalking.apm.util;
 
+/**
+ * 自定义带异常处理的Runnable
+ */
 public class RunnableWithExceptionProtection implements Runnable {
     private Runnable run;
     private CallbackWhenException callback;

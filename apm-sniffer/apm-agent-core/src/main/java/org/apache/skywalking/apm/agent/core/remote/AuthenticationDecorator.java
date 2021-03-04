@@ -30,6 +30,7 @@ import org.apache.skywalking.apm.agent.core.conf.Config;
 import org.apache.skywalking.apm.util.StringUtil;
 
 /**
+ * 把认证信息设置到请求头中
  * Active authentication header by Config.Agent.AUTHENTICATION
  */
 public class AuthenticationDecorator implements ChannelDecorator {
@@ -44,7 +45,7 @@ public class AuthenticationDecorator implements ChannelDecorator {
         return ClientInterceptors.intercept(channel, new ClientInterceptor() {
             @Override
             public <REQ, RESP> ClientCall<REQ, RESP> interceptCall(MethodDescriptor<REQ, RESP> method,
-                CallOptions options, Channel channel) {
+                                                                   CallOptions options, Channel channel) {
                 return new ForwardingClientCall.SimpleForwardingClientCall<REQ, RESP>(channel.newCall(method, options)) {
                     @Override
                     public void start(Listener<RESP> responseListener, Metadata headers) {

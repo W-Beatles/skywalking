@@ -23,6 +23,7 @@ import io.grpc.ConnectivityState;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.netty.NettyChannelBuilder;
+
 import java.util.LinkedList;
 import java.util.List;
 
@@ -31,10 +32,14 @@ public class GRPCChannel {
      * origin channel
      */
     private final ManagedChannel originChannel;
+
+    /**
+     * 增加了装饰器的连接
+     */
     private final Channel channelWithDecorators;
 
     private GRPCChannel(String host, int port, List<ChannelBuilder> channelBuilders,
-        List<ChannelDecorator> decorators) throws Exception {
+                        List<ChannelDecorator> decorators) throws Exception {
         ManagedChannelBuilder channelBuilder = NettyChannelBuilder.forAddress(host, port);
 
         for (ChannelBuilder builder : channelBuilders) {
@@ -44,6 +49,7 @@ public class GRPCChannel {
         this.originChannel = channelBuilder.build();
 
         Channel channel = originChannel;
+        // 装饰器模式，为GRPC-header添加上插件版本和认证信息
         for (ChannelDecorator decorator : decorators) {
             channel = decorator.build(channel);
         }
