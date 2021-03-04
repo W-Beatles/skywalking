@@ -357,14 +357,18 @@ public class TracingContext implements AbstractTracerContext {
      */
     @Override
     public boolean stopSpan(AbstractSpan span) {
+        // 获取上一个span
         AbstractSpan lastSpan = peek();
         if (lastSpan == span) {
+            // TracingSpan需要追踪
             if (lastSpan instanceof AbstractTracingSpan) {
                 AbstractTracingSpan toFinishSpan = (AbstractTracingSpan) lastSpan;
                 if (toFinishSpan.finish(segment)) {
                     pop();
                 }
-            } else {
+            }
+            // NoopSpan无需追踪
+            else {
                 pop();
             }
         } else {

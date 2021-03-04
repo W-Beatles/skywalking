@@ -18,13 +18,13 @@
 
 package org.apache.skywalking.apm.agent.core.plugin.match;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.description.type.TypeList;
 import net.bytebuddy.matcher.ElementMatcher;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import static net.bytebuddy.matcher.ElementMatchers.hasSuperType;
 import static net.bytebuddy.matcher.ElementMatchers.isInterface;
@@ -32,6 +32,7 @@ import static net.bytebuddy.matcher.ElementMatchers.named;
 import static net.bytebuddy.matcher.ElementMatchers.not;
 
 /**
+ * 匹配所有子类及实现该接口的对象
  * Match the class by the given super class or interfaces.
  */
 public class HierarchyMatch implements IndirectMatch {

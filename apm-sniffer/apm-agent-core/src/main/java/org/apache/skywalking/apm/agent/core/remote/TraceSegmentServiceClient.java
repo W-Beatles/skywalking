@@ -20,8 +20,6 @@ package org.apache.skywalking.apm.agent.core.remote;
 
 import io.grpc.Channel;
 import io.grpc.stub.StreamObserver;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 import org.apache.skywalking.apm.agent.core.boot.BootService;
 import org.apache.skywalking.apm.agent.core.boot.DefaultImplementor;
 import org.apache.skywalking.apm.agent.core.boot.ServiceManager;
@@ -39,10 +37,16 @@ import org.apache.skywalking.apm.network.common.v3.Commands;
 import org.apache.skywalking.apm.network.language.agent.v3.SegmentObject;
 import org.apache.skywalking.apm.network.language.agent.v3.TraceSegmentReportServiceGrpc;
 
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
 import static org.apache.skywalking.apm.agent.core.conf.Config.Buffer.BUFFER_SIZE;
 import static org.apache.skywalking.apm.agent.core.conf.Config.Buffer.CHANNEL_SIZE;
 import static org.apache.skywalking.apm.agent.core.remote.GRPCChannelStatus.CONNECTED;
 
+/**
+ * 用于发送TraceSegment服务
+ */
 @DefaultImplementor
 public class TraceSegmentServiceClient implements BootService, IConsumer<TraceSegment>, TracingContextListener, GRPCChannelListener {
     private static final ILog LOGGER = LogManager.getLogger(TraceSegmentServiceClient.class);
@@ -56,11 +60,13 @@ public class TraceSegmentServiceClient implements BootService, IConsumer<TraceSe
 
     @Override
     public void prepare() {
+        // 注入GRPC管理服务，并绑定监听器
         ServiceManager.INSTANCE.findService(GRPCChannelManager.class).addChannelListener(this);
     }
 
     @Override
     public void boot() {
+        // 初始化计数器
         lastLogTime = System.currentTimeMillis();
         segmentUplinkedCounter = 0;
         segmentAbandonedCounter = 0;
@@ -89,27 +95,27 @@ public class TraceSegmentServiceClient implements BootService, IConsumer<TraceSe
         if (CONNECTED.equals(status)) {
             final GRPCStreamServiceStatus status = new GRPCStreamServiceStatus(false);
             StreamObserver<SegmentObject> upstreamSegmentStreamObserver = serviceStub.withDeadlineAfter(
-                Config.Collector.GRPC_UPSTREAM_TIMEOUT, TimeUnit.SECONDS
+                    Config.Collector.GRPC_UPSTREAM_TIMEOUT, TimeUnit.SECONDS
             ).collect(new StreamObserver<Commands>() {
                 @Override
                 public void onNext(Commands commands) {
                     ServiceManager.INSTANCE.findService(CommandService.class)
-                                           .receiveCommand(commands);
+                            .receiveCommand(commands);
                 }
 
                 @Override
                 public void onError(
-                    Throwable throwable) {
+                        Throwable throwable) {
                     status.finished();
                     if (LOGGER.isErrorEnable()) {
                         LOGGER.error(
-                            throwable,
-                            "Send UpstreamSegment to collector fail with a grpc internal exception."
+                                throwable,
+                                "Send UpstreamSegment to collector fail with a grpc internal exception."
                         );
                     }
                     ServiceManager.INSTANCE
-                        .findService(GRPCChannelManager.class)
-                        .reportError(throwable);
+                            .findService(GRPCChannelManager.class)
+                            .reportError(throwable);
                 }
 
                 @Override
@@ -148,7 +154,7 @@ public class TraceSegmentServiceClient implements BootService, IConsumer<TraceSe
             }
             if (segmentAbandonedCounter > 0) {
                 LOGGER.debug(
-                    "{} trace segments have been abandoned, cause by no available channel.", segmentAbandonedCounter);
+                        "{} trace segments have been abandoned, cause by no available channel.", segmentAbandonedCounter);
                 segmentAbandonedCounter = 0;
             }
         }

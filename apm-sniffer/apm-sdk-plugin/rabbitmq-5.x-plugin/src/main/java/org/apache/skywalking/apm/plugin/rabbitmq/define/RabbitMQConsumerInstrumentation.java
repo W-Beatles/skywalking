@@ -53,9 +53,6 @@ public class RabbitMQConsumerInstrumentation extends ClassInstanceMethodsEnhance
                         return takesArgumentWithType(0, "com.rabbitmq.client.impl.AMQConnection");
                     }
 
-                    /**
-                     * 返回拦截器的全类名
-                     */
                     @Override
                     public String getConstructorInterceptor() {
                         return INTERCEPTOR_CONSTRUCTOR;
@@ -70,7 +67,7 @@ public class RabbitMQConsumerInstrumentation extends ClassInstanceMethodsEnhance
     @Override
     public InstanceMethodsInterceptPoint[] getInstanceMethodsInterceptPoints() {
         return new InstanceMethodsInterceptPoint[]{
-                // 为每一个要拦截的实例方法创建一个切点
+
                 new DeclaredInstanceMethodsInterceptPoint() {
                     @Override
                     public ElementMatcher<MethodDescription> getMethodsMatcher() {

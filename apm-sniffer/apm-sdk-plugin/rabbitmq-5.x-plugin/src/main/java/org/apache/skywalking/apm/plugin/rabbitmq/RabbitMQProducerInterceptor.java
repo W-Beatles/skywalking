@@ -46,6 +46,7 @@ public class RabbitMQProducerInterceptor implements InstanceMethodsAroundInterce
         AMQP.BasicProperties.Builder propertiesBuilder;
 
         Map<String, Object> headers = new HashMap<String, Object>();
+        // 复制参数值
         if (properties != null) {
             propertiesBuilder = properties.builder()
                                           .appId(properties.getAppId())
@@ -73,13 +74,17 @@ public class RabbitMQProducerInterceptor implements InstanceMethodsAroundInterce
         String exChangeName = (String) allArguments[0];
         String queueName = (String) allArguments[1];
         String url = (String) objInst.getSkyWalkingDynamicField();
+        // 创建ExitSpan
         AbstractSpan activeSpan = ContextManager.createExitSpan(OPERATE_NAME_PREFIX + "Topic/" + exChangeName + "Queue/" + queueName + PRODUCER_OPERATE_NAME_SUFFIX, contextCarrier, url);
+        // 创建tag
         Tags.MQ_BROKER.set(activeSpan, url);
         Tags.MQ_QUEUE.set(activeSpan, queueName);
         Tags.MQ_TOPIC.set(activeSpan, exChangeName);
         contextCarrier.extensionInjector().injectSendingTimestamp();
         SpanLayer.asMQ(activeSpan);
+        // 设置组件名，以供UI显示支持
         activeSpan.setComponent(ComponentsDefine.RABBITMQ_PRODUCER);
+        // 通过header传递上下文
         CarrierItem next = contextCarrier.items();
 
         while (next.hasNext()) {
@@ -87,6 +92,7 @@ public class RabbitMQProducerInterceptor implements InstanceMethodsAroundInterce
             headers.put(next.getHeadKey(), next.getHeadValue());
         }
 
+        // 覆盖入参
         allArguments[4] = propertiesBuilder.headers(headers).build();
     }
 
