@@ -19,9 +19,6 @@
 package org.apache.skywalking.apm.agent.core.jvm;
 
 import io.grpc.Channel;
-import java.util.LinkedList;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 import org.apache.skywalking.apm.agent.core.boot.BootService;
 import org.apache.skywalking.apm.agent.core.boot.DefaultImplementor;
 import org.apache.skywalking.apm.agent.core.boot.ServiceManager;
@@ -37,8 +34,15 @@ import org.apache.skywalking.apm.network.language.agent.v3.JVMMetric;
 import org.apache.skywalking.apm.network.language.agent.v3.JVMMetricCollection;
 import org.apache.skywalking.apm.network.language.agent.v3.JVMMetricReportServiceGrpc;
 
+import java.util.LinkedList;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+
 import static org.apache.skywalking.apm.agent.core.conf.Config.Collector.GRPC_UPSTREAM_TIMEOUT;
 
+/**
+ * 指标信息发送服务
+ */
 @DefaultImplementor
 public class JVMMetricsSender implements BootService, Runnable, GRPCChannelListener {
     private static final ILog LOGGER = LogManager.getLogger(JVMMetricsSender.class);
@@ -82,8 +86,8 @@ public class JVMMetricsSender implements BootService, Runnable, GRPCChannelListe
                     builder.setService(Config.Agent.SERVICE_NAME);
                     builder.setServiceInstance(Config.Agent.INSTANCE_NAME);
                     Commands commands = stub.withDeadlineAfter(GRPC_UPSTREAM_TIMEOUT, TimeUnit.SECONDS)
-                                            .collect(builder.build());
-                    // 上报JVM指标信息
+                            .collect(builder.build());
+                    // 上报指标信息
                     ServiceManager.INSTANCE.findService(CommandService.class).receiveCommand(commands);
                 }
             } catch (Exception e) {
