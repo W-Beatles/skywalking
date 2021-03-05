@@ -37,16 +37,19 @@ public class ModuleManager implements ModuleDefineHolder {
     public void init(ApplicationConfiguration applicationConfiguration) throws ModuleNotFoundException, ProviderNotFoundException, ServiceNotProvidedException, CycleDependencyException, ModuleConfigException, ModuleStartException {
         // 基于SPI机制加载所有模块对象
         String[] moduleNames = applicationConfiguration.moduleList();
+        // 加载所有模块定义
         ServiceLoader<ModuleDefine> moduleServiceLoader = ServiceLoader.load(ModuleDefine.class);
+        // 加载所有模块实例
         ServiceLoader<ModuleProvider> moduleProviderLoader = ServiceLoader.load(ModuleProvider.class);
 
         LinkedList<String> moduleList = new LinkedList<>(Arrays.asList(moduleNames));
         for (ModuleDefine module : moduleServiceLoader) {
             for (String moduleName : moduleNames) {
-                // 配置文件读取的模块名称和查找到的模块符合，就初始化该模块
+                // 找到符合的待初始化的模块
                 if (moduleName.equals(module.name())) {
-                    // TODO 2021-03-02 22:57
+                    // 初始化模块
                     module.prepare(this, applicationConfiguration.getModuleConfiguration(moduleName), moduleProviderLoader);
+                    // 添加到初始化完成列表中
                     loadedModules.put(moduleName, module);
                     moduleList.remove(moduleName);
                 }

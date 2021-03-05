@@ -42,8 +42,10 @@ public class OAPServerBootstrap {
         try {
             // 加载 application.yml 配置
             ApplicationConfiguration applicationConfiguration = configLoader.load();
+            // 基于SPI机制加载所有模块服务
             manager.init(applicationConfiguration);
 
+            // 获取telemetry模块的MetricsCreator
             manager.find(TelemetryModule.NAME)
                     .provider()
                     .getService(MetricsCreator.class)
@@ -51,6 +53,7 @@ public class OAPServerBootstrap {
                     // Set uptime to second
                     .setValue(System.currentTimeMillis() / 1000d);
 
+            // 如果以初始化模式运行，初始化服务后会退出后台进程
             if (RunningMode.isInitMode()) {
                 log.info("OAP starts up in init mode successfully, exit now...");
                 System.exit(0);
