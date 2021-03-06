@@ -37,9 +37,9 @@ public class ModuleManager implements ModuleDefineHolder {
     public void init(ApplicationConfiguration applicationConfiguration) throws ModuleNotFoundException, ProviderNotFoundException, ServiceNotProvidedException, CycleDependencyException, ModuleConfigException, ModuleStartException {
         // 基于SPI机制加载所有模块对象
         String[] moduleNames = applicationConfiguration.moduleList();
-        // 加载所有模块定义
+        // 加载的所有模块定义
         ServiceLoader<ModuleDefine> moduleServiceLoader = ServiceLoader.load(ModuleDefine.class);
-        // 加载所有模块实例
+        // 加载的所有模块实例
         ServiceLoader<ModuleProvider> moduleProviderLoader = ServiceLoader.load(ModuleProvider.class);
 
         LinkedList<String> moduleList = new LinkedList<>(Arrays.asList(moduleNames));
@@ -62,9 +62,12 @@ public class ModuleManager implements ModuleDefineHolder {
             throw new ModuleNotFoundException(moduleList.toString() + " missing.");
         }
 
+        // 根据模块依赖调整模块顺序
         BootstrapFlow bootstrapFlow = new BootstrapFlow(loadedModules);
 
+        // 调用模块的生命周期方法启动模块
         bootstrapFlow.start(this);
+        // 调用模块的生声周期方法执行模块完成逻辑
         bootstrapFlow.notifyAfterCompleted();
     }
 

@@ -18,12 +18,13 @@
 
 package org.apache.skywalking.oap.server.library.module;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.lang.reflect.Field;
 import java.util.Enumeration;
 import java.util.Properties;
 import java.util.ServiceLoader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A module definition.
@@ -42,7 +43,6 @@ public abstract class ModuleDefine implements ModuleProviderHolder {
 
     /**
      * @return the module name
-     *
      */
     public final String name() {
         return name;
@@ -61,8 +61,9 @@ public abstract class ModuleDefine implements ModuleProviderHolder {
      * @throws ProviderNotFoundException when even don't find a single one providers.
      */
     void prepare(ModuleManager moduleManager, ApplicationConfiguration.ModuleConfiguration configuration,
-        ServiceLoader<ModuleProvider> moduleProviderLoader) throws ProviderNotFoundException, ServiceNotProvidedException, ModuleConfigException, ModuleStartException {
+                 ServiceLoader<ModuleProvider> moduleProviderLoader) throws ProviderNotFoundException, ServiceNotProvidedException, ModuleConfigException, ModuleStartException {
         for (ModuleProvider provider : moduleProviderLoader) {
+            // 找到指定的ModuleProvider
             if (!configuration.has(provider.name())) {
                 continue;
             }
@@ -74,12 +75,11 @@ public abstract class ModuleDefine implements ModuleProviderHolder {
                     loadedProvider.setModuleDefine(this);
                 } else {
                     throw new DuplicateProviderException(this.name() + " module has one " + loadedProvider.name() + "[" + loadedProvider
-                        .getClass()
-                        .getName() + "] provider already, " + provider.name() + "[" + provider.getClass()
-                                                                                              .getName() + "] is defined as 2nd provider.");
+                            .getClass()
+                            .getName() + "] provider already, " + provider.name() + "[" + provider.getClass()
+                            .getName() + "] is defined as 2nd provider.");
                 }
             }
-
         }
 
         if (loadedProvider == null) {
@@ -88,24 +88,28 @@ public abstract class ModuleDefine implements ModuleProviderHolder {
 
         LOGGER.info("Prepare the {} provider in {} module.", loadedProvider.name(), this.name());
         try {
-            copyProperties(loadedProvider.createConfigBeanIfAbsent(), configuration.getProviderConfiguration(loadedProvider
-                .name()), this.name(), loadedProvider.name());
+            // 创建对应Provider的Config对象，然后从ModuleConfiguration对象中拿到Provide的配置，并将值copy到配置对象中
+            copyProperties(loadedProvider.createConfigBeanIfAbsent(),
+                    configuration.getProviderConfiguration(loadedProvider.name()), this.name(), loadedProvider.name());
         } catch (IllegalAccessException e) {
             throw new ModuleConfigException(this.name() + " module config transport to config bean failure.", e);
         }
+        // 调用Provider实例的声明周期方法初始化服务
         loadedProvider.prepare();
     }
 
     private void copyProperties(ModuleConfig dest, Properties src, String moduleName,
-        String providerName) throws IllegalAccessException {
+                                String providerName) throws IllegalAccessException {
         if (dest == null) {
             return;
         }
         Enumeration<?> propertyNames = src.propertyNames();
         while (propertyNames.hasMoreElements()) {
             String propertyName = (String) propertyNames.nextElement();
+            // 获取待赋值的config对象的实际类型
             Class<? extends ModuleConfig> destClass = dest.getClass();
             try {
+                // 通过反射给指定属性赋值
                 Field field = getDeclaredField(destClass, propertyName);
                 field.setAccessible(true);
                 field.set(dest, src.get(propertyName));

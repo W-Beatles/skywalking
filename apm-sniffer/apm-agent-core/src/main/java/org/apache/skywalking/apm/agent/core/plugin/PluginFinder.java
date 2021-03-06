@@ -45,7 +45,7 @@ public class PluginFinder {
     private final Map<String, LinkedList<AbstractClassEnhancePluginDefine>> nameMatchDefine = new HashMap<>();
     // 通过类注释、继承关系、回调结果等辅助匹配的插件
     private final List<AbstractClassEnhancePluginDefine> signatureMatchDefine = new ArrayList<>();
-    // 核心代理插件
+    // 核心类库代理插件
     private final List<AbstractClassEnhancePluginDefine> bootstrapClassMatchDefine = new ArrayList<>();
 
     public PluginFinder(List<AbstractClassEnhancePluginDefine> plugins) {

@@ -35,7 +35,7 @@ class BootstrapFlow {
     BootstrapFlow(Map<String, ModuleDefine> loadedModules) throws CycleDependencyException, ModuleNotFoundException {
         this.loadedModules = loadedModules;
         startupSequence = new LinkedList<>();
-
+        // 根据模块依赖调整模块顺序
         makeSequence();
     }
 

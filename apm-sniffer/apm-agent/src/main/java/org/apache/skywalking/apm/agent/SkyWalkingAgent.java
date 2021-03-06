@@ -88,7 +88,7 @@ public class SkyWalkingAgent {
             return;
         }
 
-        // 创建 ByteBuddy 对象，可配置是否开启 debug 模式 (agent.is_open_debugging_class=true)
+        // 创建 ByteBuddy 对象，这里可以配置是否开启 debug 模式 (agent.is_open_debugging_class=true)
         // debug 模式可以将 JavaAgent 增强的类放到 /debugger 目录下
         final ByteBuddy byteBuddy = new ByteBuddy().with(TypeValidation.of(Config.Agent.IS_OPEN_DEBUGGING_CLASS));
 
@@ -106,7 +106,7 @@ public class SkyWalkingAgent {
 
         JDK9ModuleExporter.EdgeClasses edgeClasses = new JDK9ModuleExporter.EdgeClasses();
         try {
-            // 对类进行增强
+            // 对核心类库进行进行增强
             agentBuilder = BootstrapInstrumentBoost.inject(pluginFinder, instrumentation, agentBuilder, edgeClasses);
         } catch (Exception e) {
             LOGGER.error(e, "SkyWalking agent inject bootstrap instrumentation failure. Shutting down.");
@@ -114,6 +114,7 @@ public class SkyWalkingAgent {
         }
 
         try {
+            // 添加对JDK9的支持
             agentBuilder = JDK9ModuleExporter.openReadEdge(instrumentation, agentBuilder, edgeClasses);
         } catch (Exception e) {
             LOGGER.error(e, "SkyWalking agent open read edge in JDK 9+ failure. Shutting down.");
@@ -147,6 +148,14 @@ public class SkyWalkingAgent {
         }
 
         // 注册JVM关闭事件钩子，触发 BootService 的 shutdown() 方法，进行内存清理、资源回收等工作，做优雅关闭
+        /*
+         * 触发场景
+         * 1）程序正常退出
+         * 2）使用System.exit()
+         * 3）终端使用Ctrl+C触发的中断
+         * 4）系统关闭
+         * 5）使用Kill pid命令干掉进程 (Windows平台使用: tskill pid)
+         */
         Runtime.getRuntime()
                 .addShutdownHook(new Thread(ServiceManager.INSTANCE::shutdown, "skywalking service shutdown thread"));
     }

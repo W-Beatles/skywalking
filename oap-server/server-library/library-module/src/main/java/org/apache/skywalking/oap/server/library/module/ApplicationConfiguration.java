@@ -41,6 +41,9 @@ public class ApplicationConfiguration {
         return modules.containsKey(moduleName);
     }
 
+    /**
+     * 获取模块配置
+     */
     public ModuleConfiguration getModuleConfiguration(String name) {
         return modules.get(name);
     }
@@ -54,6 +57,9 @@ public class ApplicationConfiguration {
         private ModuleConfiguration() {
         }
 
+        /**
+         * 获取模块实现配置
+         */
         public Properties getProviderConfiguration(String name) {
             return providers.get(name).getProperties();
         }

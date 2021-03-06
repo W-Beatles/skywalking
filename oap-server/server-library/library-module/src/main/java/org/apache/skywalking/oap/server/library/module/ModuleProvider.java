@@ -18,9 +18,10 @@
 
 package org.apache.skywalking.oap.server.library.module;
 
+import lombok.Setter;
+
 import java.util.HashMap;
 import java.util.Map;
-import lombok.Setter;
 
 /**
  * The <code>ModuleProvider</code> is an implementation of a {@link ModuleDefine}.
@@ -52,7 +53,7 @@ public abstract class ModuleProvider implements ModuleServiceHolder {
     public abstract Class<? extends ModuleDefine> module();
 
     /**
-     *
+     * 返回模块配置对象
      */
     public abstract ModuleConfig createConfigBeanIfAbsent();
 
@@ -81,7 +82,7 @@ public abstract class ModuleProvider implements ModuleServiceHolder {
      */
     @Override
     public final void registerServiceImplementation(Class<? extends Service> serviceType,
-        Service service) throws ServiceNotProvidedException {
+                                                    Service service) throws ServiceNotProvidedException {
         if (serviceType.isInstance(service)) {
             this.services.put(serviceType, service);
         } else {

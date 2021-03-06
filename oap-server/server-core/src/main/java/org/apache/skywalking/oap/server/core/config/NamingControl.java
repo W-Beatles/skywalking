@@ -25,6 +25,7 @@ import org.apache.skywalking.oap.server.core.config.group.EndpointNameGrouping;
 import org.apache.skywalking.oap.server.library.module.Service;
 
 /**
+ * 用于做服务、实例、端点的命名控制服务
  * NamingControl provides the service to make the names of service, instance and endpoint following the rules or
  * patterns, including length control, grouping, etc.
  */
@@ -49,10 +50,10 @@ public class NamingControl implements Service {
             final String rename = serviceName.substring(0, serviceNameMaxLength);
             if (log.isDebugEnabled()) {
                 log.debug(
-                    "Service {} has been renamed to {} due to length limitation {}",
-                    serviceName,
-                    rename,
-                    serviceNameMaxLength
+                        "Service {} has been renamed to {} due to length limitation {}",
+                        serviceName,
+                        rename,
+                        serviceNameMaxLength
                 );
             }
             return rename;
@@ -74,10 +75,10 @@ public class NamingControl implements Service {
             final String rename = instanceName.substring(0, instanceNameMaxLength);
             if (log.isDebugEnabled()) {
                 log.debug(
-                    "Service instance {} has been renamed to {} due to length limitation {}",
-                    instanceName,
-                    rename,
-                    serviceNameMaxLength
+                        "Service instance {} has been renamed to {} due to length limitation {}",
+                        instanceName,
+                        rename,
+                        serviceNameMaxLength
                 );
             }
             return rename;
@@ -105,10 +106,10 @@ public class NamingControl implements Service {
             lengthControlledName = endpointName.substring(0, endpointNameMaxLength);
             if (log.isDebugEnabled()) {
                 log.debug(
-                    "Endpoint {} has been renamed to {} due to length limitation {}",
-                    endpointName,
-                    lengthControlledName,
-                    serviceNameMaxLength
+                        "Endpoint {} has been renamed to {} due to length limitation {}",
+                        endpointName,
+                        lengthControlledName,
+                        serviceNameMaxLength
                 );
             }
 
