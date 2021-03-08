@@ -41,7 +41,7 @@ import static net.bytebuddy.matcher.ElementMatchers.not;
  * AbstractClassEnhancePluginDefine} list.
  */
 public class PluginFinder {
-    // 基于全类名匹配的插件
+    // 基于全类名匹配的插件，(k, v) -> (要增强的类全名，插件对象)
     private final Map<String, LinkedList<AbstractClassEnhancePluginDefine>> nameMatchDefine = new HashMap<>();
     // 通过类注释、继承关系、回调结果等辅助匹配的插件
     private final List<AbstractClassEnhancePluginDefine> signatureMatchDefine = new ArrayList<>();
@@ -77,10 +77,12 @@ public class PluginFinder {
     public List<AbstractClassEnhancePluginDefine> find(TypeDescription typeDescription) {
         List<AbstractClassEnhancePluginDefine> matchedPlugins = new LinkedList<AbstractClassEnhancePluginDefine>();
         String typeName = typeDescription.getTypeName();
+        // 先通过类名查找
         if (nameMatchDefine.containsKey(typeName)) {
             matchedPlugins.addAll(nameMatchDefine.get(typeName));
         }
 
+        // 然后在间接匹配的插件中查找
         for (AbstractClassEnhancePluginDefine pluginDefine : signatureMatchDefine) {
             IndirectMatch match = (IndirectMatch) pluginDefine.enhanceClass();
             if (match.isMatch(typeDescription)) {
@@ -92,19 +94,23 @@ public class PluginFinder {
     }
 
     public ElementMatcher<? super TypeDescription> buildMatch() {
+        // 构造匹配器，对类名匹配的类进行增强
         ElementMatcher.Junction judge = new AbstractJunction<NamedElement>() {
             @Override
             public boolean matches(NamedElement target) {
                 return nameMatchDefine.containsKey(target.getActualName());
             }
         };
+        // 不增强接口
         judge = judge.and(not(isInterface()));
+        // 遍历通过类注释、继承关系、回调结果等辅助匹配的插件列表，对符合的类进行增强
         for (AbstractClassEnhancePluginDefine define : signatureMatchDefine) {
             ClassMatch match = define.enhanceClass();
             if (match instanceof IndirectMatch) {
                 judge = judge.or(((IndirectMatch) match).buildJunction());
             }
         }
+        // 装饰器模式为ElementMatcher添加防御式代码，防止类匹配发生异常影响主流程执行
         return new ProtectiveShieldMatcher(judge);
     }
 

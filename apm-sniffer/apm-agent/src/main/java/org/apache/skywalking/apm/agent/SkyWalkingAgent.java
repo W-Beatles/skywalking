@@ -133,6 +133,7 @@ public class SkyWalkingAgent {
 
         // pluginFinder.buildMatch() 用于指定要增强的类
         agentBuilder.type(pluginFinder.buildMatch())
+                // 指定增强逻辑
                 .transform(new Transformer(pluginFinder))
                 .with(AgentBuilder.RedefinitionStrategy.RETRANSFORMATION)
                 // 指定监听器
@@ -172,10 +173,12 @@ public class SkyWalkingAgent {
                                                 final TypeDescription typeDescription,
                                                 final ClassLoader classLoader,
                                                 final JavaModule module) {
+            // 查找符合的插件列表
             List<AbstractClassEnhancePluginDefine> pluginDefines = pluginFinder.find(typeDescription);
             if (pluginDefines.size() > 0) {
                 DynamicType.Builder<?> newBuilder = builder;
                 EnhanceContext context = new EnhanceContext();
+                // 遍历插件列表构造类的增强逻辑，实际增强要等到调用 installOn() 方法
                 for (AbstractClassEnhancePluginDefine define : pluginDefines) {
                     DynamicType.Builder<?> possibleNewBuilder = define.define(
                             typeDescription, newBuilder, classLoader, context);
