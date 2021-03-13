@@ -20,7 +20,7 @@ package org.apache.skywalking.oap.server.library.module;
 
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.LinkedList;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.ServiceLoader;
 
@@ -42,24 +42,22 @@ public class ModuleManager implements ModuleDefineHolder {
         // 加载的所有模块实例
         ServiceLoader<ModuleProvider> moduleProviderLoader = ServiceLoader.load(ModuleProvider.class);
 
-        LinkedList<String> moduleList = new LinkedList<>(Arrays.asList(moduleNames));
+        HashSet<String> moduleSet = new HashSet<>(Arrays.asList(moduleNames));
         for (ModuleDefine module : moduleServiceLoader) {
-            for (String moduleName : moduleNames) {
-                // 找到符合的待初始化的模块
-                if (moduleName.equals(module.name())) {
-                    // 初始化模块
-                    module.prepare(this, applicationConfiguration.getModuleConfiguration(moduleName), moduleProviderLoader);
-                    // 添加到初始化完成列表中
-                    loadedModules.put(moduleName, module);
-                    moduleList.remove(moduleName);
-                }
+            // 找到符合的待初始化的模块
+            if (moduleSet.contains(module.name())) {
+                // 初始化模块
+                module.prepare(this, applicationConfiguration.getModuleConfiguration(module.name()), moduleProviderLoader);
+                // 添加到初始化完成列表中
+                loadedModules.put(module.name(), module);
+                moduleSet.remove(module.name());
             }
         }
         // Finish prepare stage
         isInPrepareStage = false;
 
-        if (moduleList.size() > 0) {
-            throw new ModuleNotFoundException(moduleList.toString() + " missing.");
+        if (moduleSet.size() > 0) {
+            throw new ModuleNotFoundException(moduleSet.toString() + " missing.");
         }
 
         // 根据模块依赖调整模块顺序

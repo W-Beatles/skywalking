@@ -5,6 +5,7 @@ Release Notes.
 8.5.0
 ------------------
 #### Project
+* **Incompatible Change**. Indices and templates of ElasticSearch(6/7, including zipkin-elasticsearch7) storage option have been changed. 
 * Update frontend-maven-plugin to 1.11.0, for Download node x64 binary on Apple Silicon.
 * Add E2E test for VM monitoring that metrics from Prometheus node-exporter.
 * Upgrade lombok to 1.18.16.
@@ -45,6 +46,10 @@ Release Notes.
 * Save Envoy http access logs when error occurs.
 * Fix wrong `service_instance_sla` setting in the `topology-instance.yml`.
 * Fix wrong metrics name setting in the `self-observability.yml`.
+* Add telemetry data about metrics in, metrics scraping and trace in metrics to zipkin receiver.
+* Fix tags store of log and trace on h2/mysql/pg storage.
+* Merge indices by Metrics Function and Meter Function in Elasticsearch Storage. 
+* Fix receiver don't need to get itself when healthCheck
 
 #### UI
 * Update selector scroller to show in all pages.
